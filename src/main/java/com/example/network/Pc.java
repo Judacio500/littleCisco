@@ -1,6 +1,10 @@
-package com.example;
+package com.example.network;
 
-import java.util.*;
+import java.util.LinkedList;
+import java.util.Queue;
+import java.util.UUID;
+
+import com.example.behaviour.Console;
 
 public class Pc 
 {
@@ -43,12 +47,35 @@ public class Pc
     String IP, MAC, displayName;
     Console console;
     enum Status{AVAILABLE,BUSY,OFF};
-    Queue<Packet> packages;
+    Status status;
+    Queue<Packt> packages = new LinkedList<>();
 
-    public Pc()
+    public Pc(String displayName)
     {
-
+      this.displayName = displayName;
+      this.MAC = UUID.randomUUID().toString().substring(0, 12).toUpperCase();
+      this.status = Status.AVAILABLE;
+      this.IP = "0.0.0.0";
+      // this.Console = new Console();
     }
 
+    public void setIP(String iP) 
+    {
+      this.IP = iP;
+    }
 
+    public void setDisplayName(String displayName) 
+    {
+      this.displayName = displayName;
+    }
+
+    public void setOff() 
+    {
+        this.status = Status.OFF;
+    }
+
+    public void setAvailable()
+    {
+        this.status = Status.AVAILABLE;
+    }
 }
