@@ -1,4 +1,7 @@
 package com.example;
+import com.example.network.JGraphTNetwork;
+import com.example.network.Pc;
+import com.example.network.Link;
 
 /*
     CONMUTACION POR CIRCUITOS
@@ -15,7 +18,24 @@ package com.example;
 */
 
 public class Main {
-    public static void main(String[] args) {
-        System.out.println("Hello world!");
+    public static void main(String[] args) 
+    {
+        JGraphTNetwork pcNetwork = new JGraphTNetwork();
+
+        Pc p1 = new Pc("prueba_1");
+        Pc p2 = new Pc("prueba_2");
+        Pc p3 = new Pc("prueba_3");
+
+        Link p1p2 = new Link(p1,p2);
+        Link p1p3 = new Link(p1,p3);
+
+        pcNetwork.addNode(p1);
+        pcNetwork.addNode(p2);
+        pcNetwork.addNode(p3);
+
+        pcNetwork.connectNodes(p1p2);
+        pcNetwork.connectNodes(p1p3);
+
+        System.out.println(pcNetwork.toString());
     }
 }
