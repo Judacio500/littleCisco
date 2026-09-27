@@ -7,14 +7,15 @@
     <groupId>com.example</groupId>
     <artifactId>cpc</artifactId>
     <version>1.0-SNAPSHOT</version>
-
-    <!-- Source: https://mvnrepository.com/artifact/org.jgrapht/jgrapht-core -->
-    <dependency>
-    <groupId>org.jgrapht</groupId>
-    <artifactId>jgrapht-core</artifactId>
-    <version>1.5.3</version>
-    <scope>compile</scope>
-    </dependency>
+    
+    <dependencies>
+        <!-- Source: https://mvnrepository.com/artifact/org.jgrapht/jgrapht-core -->
+        <dependency>
+            <groupId>org.jgrapht</groupId>
+            <artifactId>jgrapht-core</artifactId>
+            <version>1.5.3</version>
+        </dependency>
+    </dependencies>
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
