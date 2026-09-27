@@ -52,7 +52,7 @@ public class Pc implements Runnable
     private volatile boolean active = true;
     Status status;
     LinkedBlockingQueue<Event> listener = new LinkedBlockingQueue<>();
-    Map<String, List<Packt>> packtBuffer = new HashMap<>();
+    public Map<UUID, List<Packt>> packtBuffer = new HashMap<>();
 
     public Pc(String displayName)
     {
