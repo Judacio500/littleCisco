@@ -70,6 +70,11 @@ public class Link
         this.status = Status.AVAILABLE;
     }
 
+    public void setBusy()
+    {
+        this.status = Status.BUSY;
+    }
+
     public void setWeight(double weight) 
     {
         if(weight >= 2000) // Ponemos como valor maximo 2000ms
@@ -81,5 +86,15 @@ public class Link
             this.weight = weight;
         }
         return;
+    }
+
+    public Pc getEndPointA() {
+        return endPointA;
+    }
+
+    public Pc getEndPointB() {
+        return endPointB;
     }  
+
+    
 }
