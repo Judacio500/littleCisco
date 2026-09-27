@@ -45,6 +45,11 @@ public class Link
         this.status = Status.AVAILABLE;
     }
 
+    public double getWeight() 
+    {
+        return weight;
+    }
+
     public void setEndPointA(Pc endPointA) 
     {
         this.endPointA = endPointA;

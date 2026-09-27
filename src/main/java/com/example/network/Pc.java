@@ -78,4 +78,33 @@ public class Pc
     {
         this.status = Status.AVAILABLE;
     }
+
+    @Override
+    public int hashCode()
+     {
+      final int prime = 31;
+      int result = 1;
+      result = prime * result + ((MAC == null) ? 0 : MAC.hashCode());
+      return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) 
+    {
+      if (this == obj)
+        return true;
+      if (obj == null)
+        return false;
+      if (getClass() != obj.getClass())
+        return false;
+      Pc other = (Pc) obj;
+      if (MAC == null) {
+        if (other.MAC != null)
+          return false;
+      } else if (!MAC.equals(other.MAC))
+        return false;
+      return true;
+    }
+
+    
 }
