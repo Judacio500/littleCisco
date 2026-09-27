@@ -5,7 +5,7 @@ import java.util.List;
 
 public abstract class Console
 {
-    List<String> consoleLog = new ArrayList<>();
+    protected List<String> consoleLog = new ArrayList<>();
 
     public String process(String user, String command)
     {
