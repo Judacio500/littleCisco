@@ -62,6 +62,12 @@ public class Packt
         this.route = route;
     }
 
-    
+    public int getnParts() {
+        return nParts;
+    }
+
+    public void setnParts(int nParts) {
+        this.nParts = nParts;
+    }
 
 }

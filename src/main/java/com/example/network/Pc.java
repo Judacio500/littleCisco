@@ -5,6 +5,8 @@ import java.util.Map;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.LinkedBlockingQueue;
+
+import com.example.behaviour.BasicConsole;
 import com.example.behaviour.Console;
 import com.example.interfaces.Event;
 
@@ -47,7 +49,7 @@ public class Pc implements Runnable
     */
 
     String IP, MAC, displayName;
-    Console console;
+    public Console console = new BasicConsole();
     enum Status{AVAILABLE,BUSY,OFF};
     private volatile boolean active = true;
     Status status;
