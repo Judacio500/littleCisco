@@ -78,6 +78,11 @@ public class Pc
     {
         this.status = Status.AVAILABLE;
     }
+    
+    public void setBusy()
+    {
+        this.status = Status.BUSY;
+    }
 
     @Override
     public int hashCode()
