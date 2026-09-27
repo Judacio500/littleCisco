@@ -1,12 +1,14 @@
 package com.example.network;
 
-import java.util.LinkedList;
-import java.util.Queue;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.List;
 import java.util.UUID;
-
+import java.util.concurrent.LinkedBlockingQueue;
 import com.example.behaviour.Console;
+import com.example.interfaces.Event;
 
-public class Pc 
+public class Pc implements Runnable
 {
     /*
         ¿Que se supone que debe llevar una PC(nodo) en este caso?
@@ -47,8 +49,10 @@ public class Pc
     String IP, MAC, displayName;
     Console console;
     enum Status{AVAILABLE,BUSY,OFF};
+    private volatile boolean active = true;
     Status status;
-    Queue<Packt> packages = new LinkedList<>();
+    LinkedBlockingQueue<Event> listener = new LinkedBlockingQueue<>();
+    Map<String, List<Packt>> packtBuffer = new HashMap<>();
 
     public Pc(String displayName)
     {
@@ -103,13 +107,50 @@ public class Pc
       if (getClass() != obj.getClass())
         return false;
       Pc other = (Pc) obj;
-      if (MAC == null) {
+      if (MAC == null) 
+      {
         if (other.MAC != null)
           return false;
-      } else if (!MAC.equals(other.MAC))
+      } 
+      else if (!MAC.equals(other.MAC))
         return false;
       return true;
     }
 
-    
+    public void queueInstruction(Event event)
+    {
+        try
+        {
+          listener.put(event);
+        }
+        catch(InterruptedException e)
+        {
+          Thread.currentThread().interrupt();
+        }
+    }
+
+    public void run()
+    {
+      while(active)
+        {
+            try
+            {
+              Event event = listener.take();
+              try
+              {
+                event.execute(this);
+              }
+              catch(Exception logicException)
+              {
+                System.out.println(displayName + "fallo al ejecutar un evento: " + logicException.getMessage());
+              }
+            } 
+            catch (InterruptedException e) 
+            {
+              System.out.println("Tarea interrumpida abruptamente.");
+              Thread.currentThread().interrupt();
+              break;
+            }
+        }
+    }
 }
