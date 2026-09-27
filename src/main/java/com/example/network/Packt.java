@@ -1,36 +1,40 @@
 package com.example.network;
 
+import java.util.UUID;
 import java.util.List;
 import com.example.network.Link;
 
 public class Packt 
 {
-    int id;
+    UUID id;
     int order;
+    int nParts;
     String Message;
-    List<Link> route; 
+    public List<Link> route; 
 
-    public Packt(String Message, int id, List<Link> route)
+    public Packt(String Message, UUID id, List<Link> route)
     {
         this.Message = Message;
         this.id = id;
         this.route = route;
-        this.order = -1;
+        this.nParts = 1;
+        this.order = 0;
     }
 
-    public Packt(String Message, int id, int order, List<Link> route)
+    public Packt(String Message, UUID id, int parts, int order, List<Link> route)
     {
         this.Message = Message;
         this.id = id;
         this.route = route;
         this.order = order;
+        this.nParts = parts;
     }
 
-    public int getId() {
+    public UUID getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(UUID id) {
         this.id = id;
     }
 
