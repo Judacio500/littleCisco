@@ -86,5 +86,15 @@ public class Link
             this.weight = weight;
         }
         return;
+    }
+
+    public Pc getEndPointA() {
+        return endPointA;
+    }
+
+    public Pc getEndPointB() {
+        return endPointB;
     }  
+
+    
 }
