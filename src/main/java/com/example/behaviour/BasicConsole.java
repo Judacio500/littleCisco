@@ -16,7 +16,7 @@ public class BasicConsole extends Console
     {
     }
 
-    public void setDependencies(Pc owner, NetworkManager manager, Map<String, Pc> knownHosts) 
+    public void setup(Pc owner, NetworkManager manager, Map<String, Pc> knownHosts) 
     {
         this.owner = owner;
         this.manager = manager;
