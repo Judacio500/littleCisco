@@ -12,10 +12,10 @@ public class Packt
     String Message;
     public List<Link> route; 
 
-    public Packt(String Message, UUID id, List<Link> route)
+    public Packt(String Message, List<Link> route)
     {
         this.Message = Message;
-        this.id = id;
+        this.id = UUID.randomUUID();
         this.route = route;
         this.nParts = 1;
         this.order = 0;

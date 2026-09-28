@@ -55,6 +55,7 @@ public class Pc implements Runnable
     Status status;
     LinkedBlockingQueue<Event> listener = new LinkedBlockingQueue<>();
     public Map<UUID, List<Packt>> packtBuffer = new HashMap<>();
+    UUID connToken;
 
     public Pc(String displayName)
     {
@@ -88,6 +89,14 @@ public class Pc implements Runnable
     public void setBusy()
     {
         this.status = Status.BUSY;
+    }
+
+    public UUID getConnToken() {
+      return connToken;
+    }
+
+    public void setConnToken(UUID connToken) {
+      this.connToken = connToken;
     }
 
     @Override
@@ -155,4 +164,5 @@ public class Pc implements Runnable
             }
         }
     }
+
 }
