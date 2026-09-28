@@ -76,6 +76,10 @@ public class Pc implements Runnable
       this.displayName = displayName;
     }
 
+    public String getDisplayName() {
+      return displayName;
+    }
+
     public void setOff() 
     {
         this.status = Status.OFF;
