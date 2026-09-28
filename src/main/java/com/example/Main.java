@@ -1,41 +1,122 @@
 package com.example;
-import com.example.network.JGraphTNetwork;
-import com.example.network.Pc;
-import com.example.network.Link;
 
-/*
-    CONMUTACION POR CIRCUITOS
+import com.example.network.*;
+import com.example.behaviour.BasicConsole;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Scanner;
 
-    Es necesario desarrollar un sistema que haga lo siguiente:
-
-    1.-Seleccionar una PC
-    2.-Abrir su terminal
-    3.-Escribir comandos (requests) a otros nodos en la red
-    4.-trazar una ruta hacia la PC a la que se le hizo la solicitud
-    5.-hacer llegar el paquete
-    6.-recibir una respuesta por la misma ruta
-    7.-soltar el circuito
-*/
-
-public class Main {
+public class Main 
+{
     public static void main(String[] args) 
     {
-        JGraphTNetwork pcNetwork = new JGraphTNetwork();
+        NetworkManager manager = new NetworkManager();
+        new Thread(manager).start();
 
-        Pc p1 = new Pc("prueba_1");
-        Pc p2 = new Pc("prueba_2");
-        Pc p3 = new Pc("prueba_3");
+        Map<String, Pc> networkHosts = new HashMap<>();
+        Scanner scanner = new Scanner(System.in);
+        boolean running = true;
 
-        Link p1p2 = new Link(p1,p2);
-        Link p1p3 = new Link(p1,p3);
+        System.out.println("=== SIMULADOR DE RED INICIADO ===");
 
-        pcNetwork.addNode(p1);
-        pcNetwork.addNode(p2);
-        pcNetwork.addNode(p3);
+        while(running) 
+        {
+            System.out.println("\n--- MODO ADMINISTRADOR (TOPOLOGIA) ---");
+            System.out.println("1. Instanciar nueva PC");
+            System.out.println("2. Conectar PCs (Crear Link)");
+            System.out.println("3. Abrir terminal de una PC");
+            System.out.println("4. Apagar simulador");
+            System.out.print("Opcion: ");
+            
+            String option = scanner.nextLine();
 
-        pcNetwork.connectNodes(p1p2);
-        pcNetwork.connectNodes(p1p3);
-
-        System.out.println(pcNetwork.toString());
+            switch (option) 
+            {
+                case "1":
+                    System.out.print("Asigna un nombre a la PC: ");
+                    String pcName = scanner.nextLine();
+                    
+                    if(!networkHosts.containsKey(pcName))
+                    {
+                        Pc newPc = new Pc(pcName);
+                        ((BasicConsole) newPc.console).setup(newPc, manager, networkHosts);
+                        networkHosts.put(pcName, newPc);
+                        manager.network.addNode(newPc);
+                        new Thread(newPc).start();
+                        System.out.println("Nodo " + pcName + " creado y encendido.");
+                    }
+                    else
+                    {
+                        System.out.println("Error: Ya existe un nodo con ese nombre.");
+                    }
+                    break;
+                    
+                case "2":
+                    System.out.print("Nodo origen: ");
+                    String origin = scanner.nextLine();
+                    System.out.print("Nodo destino: ");
+                    String dest = scanner.nextLine();
+                    
+                    Pc pcA = networkHosts.get(origin);
+                    Pc pcB = networkHosts.get(dest);
+                    
+                    if(pcA != null && pcB != null)
+                    {
+                        manager.network.connectNodes(new Link(pcA, pcB));
+                        System.out.println("Enlace de red creado entre " + origin + " y " + dest + ".");
+                    }
+                    else
+                    {
+                        System.out.println("Error: Uno o ambos nodos no existen en la red.");
+                    }
+                    break;
+                    
+                case "3":
+                    System.out.print("Ingresar a la terminal de: ");
+                    String targetNode = scanner.nextLine();
+                    Pc activePc = networkHosts.get(targetNode);
+                    
+                    if(activePc != null)
+                    {
+                        boolean inConsole = true;
+                        System.out.println("\n--- CONECTADO A " + targetNode + " ---");
+                        System.out.println("Escribe EXIT_CONSOLE para volver al administrador.");
+                        
+                        while(inConsole)
+                        {
+                            System.out.print(targetNode + "@root:~$ ");
+                            String input = scanner.nextLine();
+                            
+                            if(input.equalsIgnoreCase("EXIT_CONSOLE"))
+                            {
+                                inConsole = false;
+                                System.out.println("Desconectado de la terminal.");
+                            }
+                            else
+                            {
+                                String response = activePc.console.process("User", input);
+                                System.out.println(response);
+                                
+                                try { Thread.sleep(300); } catch (Exception e){} 
+                            }
+                        }
+                    }
+                    else
+                    {
+                        System.out.println("Error: Nodo no encontrado.");
+                    }
+                    break;
+                    
+                case "4":
+                    running = false;
+                    System.out.println("Apagando simulador...");
+                    System.exit(0);
+                    break;
+                    
+                default:
+                    System.out.println("Opcion no valida.");
+            }
+        }
+        scanner.close();
     }
 }
