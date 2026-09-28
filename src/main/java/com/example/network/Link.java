@@ -96,5 +96,10 @@ public class Link
         return endPointB;
     }  
 
-    
+    public Boolean isAvailable()
+    {
+        if(this.status == Status.AVAILABLE)
+            return true;
+        return false;
+    }
 }
