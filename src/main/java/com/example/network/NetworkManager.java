@@ -11,7 +11,6 @@ public class NetworkManager implements Runnable
 {
     public JGraphTNetwork network = new JGraphTNetwork();
     private Map<UUID, List<Link>> activeConnections = new HashMap<>();
-    enum Status{PACKET_SWITCHING, CIRCUIT_SWITCHING};
     private volatile boolean active = true;
     LinkedBlockingQueue<Event> listener = new LinkedBlockingQueue<>();
 
@@ -39,4 +38,9 @@ public class NetworkManager implements Runnable
     {
         return activeConnections.get(token);
     }
+
+    public void eraseConn(UUID token)
+    {
+        activeConnections.remove(token);
+    }   
 }
