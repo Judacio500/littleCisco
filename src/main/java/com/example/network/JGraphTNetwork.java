@@ -4,8 +4,9 @@ import java.util.List;
 import org.jgrapht.graph.SimpleWeightedGraph;
 import org.jgrapht.graph.DefaultWeightedEdge;
 import com.example.interfaces.Network;
-import org.jgrapht.alg.shortestpath.DijkstraShortestPath;
-import org.jgrapht.alg.interfaces.ShortestPathAlgorithm;
+import org.jgrapht.alg.shortestpath.YenKShortestPath;
+import org.jgrapht.GraphPath;
+import org.jgrapht.alg.interfaces.KShortestPathAlgorithm;
 import java.util.Map;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -34,17 +35,32 @@ public class JGraphTNetwork implements Network
     
     public List<Link> getRouting(Pc origin, Pc destination) 
     {
-        ShortestPathAlgorithm<Pc, DefaultWeightedEdge> djk = new DijkstraShortestPath<>(network);
-        List<DefaultWeightedEdge> mathList = djk.getPath(origin, destination).getEdgeList();
+        KShortestPathAlgorithm<Pc, DefaultWeightedEdge> djk = new YenKShortestPath<>(network);
+        List<GraphPath<Pc,DefaultWeightedEdge>> posibleConnections = djk.getPaths(origin, destination,5);
 
-        List<Link> connections = new ArrayList<>();
+        List<Link> connectionBuffer = new ArrayList<>();
 
-        for(DefaultWeightedEdge edge : mathList)
+        for(GraphPath<Pc,DefaultWeightedEdge> infoRoute : posibleConnections)
         {
-            connections.add(links.getOrDefault(edge, null));
-        }
+            List<DefaultWeightedEdge> connectionList = infoRoute.getEdgeList();
 
-        return connections;
+            for(DefaultWeightedEdge edge : connectionList)
+            {
+                Link currentLink = links.getOrDefault(edge, null);
+                if(currentLink.isAvailable()) // Si todos los cables estan disponibles el for terminara normalmente
+                    connectionBuffer.add(currentLink);
+                else
+                {
+                    connectionBuffer.clear();
+                    break;  // En cambio si uno de los cables no esta disponible el ciclo
+                              // se detiene aqui y pasa a inspeccionar la siguiente ruta
+                }
+            }
+            if(!connectionBuffer.isEmpty()) // Si el ciclo termino, antes de pasar a la siguiente ruta
+                break;                      // preguntamos si la lista tiene elementos ya que el unico caso donde no los tiene es cuando un cable no estaba disponible
+                                            // lo que significa que si tiene elementos tiene una ruta disponible y no tiene que checar las otras
+        }   
+        return connectionBuffer;
     }
 
     @Override 
