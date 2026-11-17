@@ -1,64 +1,71 @@
 package com.example.network.packets;
 
-import java.util.UUID;
-import java.util.List;
-import com.example.network.Link;
-
-public class IpPacket 
+public class IpPacket implements FramePayload
 {
-    private String sourceIp;
-    private String destIp;
-    private int protocol; // Ej: 6 para texto/TCP, 89 para OSPF
-    private Payload data;
+    public enum Protocol
+    {
+        DATA,
+        OSPF
+    }
 
-    public IpPacket(String sourceIp, String destIp, int protocol, Payload data) 
+    private final String sourceIp;
+    private final String destIp;
+    private int ttl;
+    private final Protocol protocol;
+    private final Payload payload;
+
+    public IpPacket(String sourceIp, String destIp, int ttl, Protocol protocol, Payload payload)
     {
         this.sourceIp = sourceIp;
         this.destIp = destIp;
+        this.ttl = ttl;
         this.protocol = protocol;
-        this.data = data;
+        this.payload = payload;
     }
 
-    public String getSourceIp() 
+    public IpPacket(String sourceIp, String destIp, Protocol protocol, Payload payload)
+    {
+        this(sourceIp, destIp, 64, protocol, payload);
+    }
+
+    @Override
+    public EtherType getEtherType()
+    {
+        return EtherType.IPV4;
+    }
+
+    public void decrementTtl()
+    {
+        this.ttl--;
+    }
+
+    public boolean isAlive()
+    {
+        return this.ttl > 0;
+    }
+
+    public String getSourceIp()
     {
         return sourceIp;
     }
 
-    public void setSourceIp(String sourceIp) 
-    {
-        this.sourceIp = sourceIp;
-    }
-
-    public String getDestIp() 
+    public String getDestIp()
     {
         return destIp;
     }
 
-    public void setDestIp(String destIp) 
+    public int getTtl()
     {
-        this.destIp = destIp;
+        return ttl;
     }
 
-    public int getProtocol() 
+    public Protocol getProtocol()
     {
         return protocol;
     }
 
-    public void setProtocol(int protocol) 
+    public Payload getPayload()
     {
-        this.protocol = protocol;
+        return payload;
     }
-
-    public Payload getData() 
-    {
-        return data;
-    }
-
-    public void setData(Payload data) 
-    {
-        this.data = data;
-    }
-
-    
-
 }

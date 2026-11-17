@@ -1,47 +1,56 @@
 package com.example.network.packets;
 
-public class EthernetFrame 
-{
-    private String sourceMac;
-    private String destMac;
-    private IpPacket payload;
+import com.example.network.packets.FramePayload.EtherType;
 
-    public EthernetFrame(String sourceMac, String destMac, IpPacket payload) 
+public class EthernetFrame
+{
+    public static final String BROADCAST_MAC = "FFFFFFFFFFFF";
+    public static final String MULTICAST_PREFIX = "01005E";
+
+    private final String sourceMac;
+    private final String destMac;
+    private final EtherType etherType;
+    private final FramePayload payload;
+
+    public EthernetFrame(String sourceMac, String destMac, FramePayload payload)
     {
         this.sourceMac = sourceMac;
         this.destMac = destMac;
         this.payload = payload;
+        this.etherType = payload.getEtherType();
     }
 
-    public String getSourceMac() 
+    public boolean isBroadcast()
+    {
+        return BROADCAST_MAC.equalsIgnoreCase(destMac);
+    }
+
+    public boolean isMulticast()
+    {
+        if(destMac == null)
+        {
+            return false;
+        }
+        return destMac.toUpperCase().startsWith(MULTICAST_PREFIX);
+    }
+
+    public String getSourceMac()
     {
         return sourceMac;
     }
 
-    public void setSourceMac(String sourceMac) 
-    {
-        this.sourceMac = sourceMac;
-    }
-
-    public String getDestMac() 
+    public String getDestMac()
     {
         return destMac;
     }
 
-    public void setDestMac(String destMac) 
+    public EtherType getEtherType()
     {
-        this.destMac = destMac;
+        return etherType;
     }
 
-    public IpPacket getPayload() 
+    public FramePayload getPayload()
     {
         return payload;
     }
-
-    public void setPayload(IpPacket payload) 
-    {
-        this.payload = payload;
-    }
-
-    
 }
