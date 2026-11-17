@@ -1,72 +1,135 @@
 package com.example.network;
 
-import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 import org.jgrapht.graph.SimpleWeightedGraph;
-import org.jgrapht.graph.DefaultWeightedEdge;
-import com.example.interfaces.Network;
-import org.jgrapht.alg.shortestpath.YenKShortestPath;
-import org.jgrapht.GraphPath;
-import org.jgrapht.alg.interfaces.KShortestPathAlgorithm;
-import java.util.Map;
-import java.util.ArrayList;
-import java.util.HashMap;
 
-public class JGraphTNetwork implements Network
+import com.example.network.devices.NIC;
+import com.example.network.devices.NetworkNode;
+import com.example.network.packets.EthernetFrame;
+
+
+public class JGraphTNetwork
 {
-    SimpleWeightedGraph<Pc, DefaultWeightedEdge> network = new SimpleWeightedGraph<>(DefaultWeightedEdge.class);
-    Map<DefaultWeightedEdge, Link> links = new HashMap<>();
+    private final SimpleWeightedGraph<NetworkNode, Link> network;
 
     public JGraphTNetwork()
     {
-        
+        this.network = new SimpleWeightedGraph<>(Link.class);
     }
 
-    public void addNode(Pc pc) 
+    public void addNode(NetworkNode node)
     {
-        network.addVertex(pc);
-    }
-
-    public void connectNodes(Link connection) 
-    {
-        DefaultWeightedEdge jgraphtEdge = network.addEdge(connection.endPointA, connection.endPointB);
-        links.put(jgraphtEdge,connection);
-        network.setEdgeWeight(jgraphtEdge, connection.getWeight());
-    }
-    
-    public List<Link> getRouting(Pc origin, Pc destination) 
-    {
-        KShortestPathAlgorithm<Pc, DefaultWeightedEdge> djk = new YenKShortestPath<>(network);
-        List<GraphPath<Pc,DefaultWeightedEdge>> posibleConnections = djk.getPaths(origin, destination,5);
-
-        List<Link> connectionBuffer = new ArrayList<>();
-
-        for(GraphPath<Pc,DefaultWeightedEdge> infoRoute : posibleConnections)
+        if(node != null)
         {
-            List<DefaultWeightedEdge> connectionList = infoRoute.getEdgeList();
-
-            for(DefaultWeightedEdge edge : connectionList)
-            {
-                Link currentLink = links.getOrDefault(edge, null);
-                if(currentLink.isAvailable()) // Si todos los cables estan disponibles el for terminara normalmente
-                    connectionBuffer.add(currentLink);
-                else
-                {
-                    connectionBuffer.clear();
-                    break;  // En cambio si uno de los cables no esta disponible el ciclo
-                              // se detiene aqui y pasa a inspeccionar la siguiente ruta
-                }
-            }
-            if(!connectionBuffer.isEmpty()) // Si el ciclo termino, antes de pasar a la siguiente ruta
-                break;                      // preguntamos si la lista tiene elementos ya que el unico caso donde no los tiene es cuando un cable no estaba disponible
-                                            // lo que significa que si tiene elementos tiene una ruta disponible y no tiene que checar las otras
-        }   
-        return connectionBuffer;
+            network.addVertex(node);
+            node.setNetwork(this);
+        }
     }
 
-    @Override 
+    public void addLink(NIC portA, NIC portB, Link link, double weight)
+    {
+        if(portA == null || portB == null || link == null)
+        {
+            return;
+        }
+        NetworkNode nodeA = portA.getHostNode();
+        NetworkNode nodeB = portB.getHostNode();
+        if(nodeA == null || nodeB == null || nodeA.equals(nodeB))
+        {
+            return;
+        }
+
+        addNode(nodeA);
+        addNode(nodeB);
+        link.bindPorts(portA, portB);
+        network.addEdge(nodeA, nodeB, link);
+        network.setEdgeWeight(link, weight);
+    }
+
+    public void transmitFrame(NIC outNic, EthernetFrame frame)
+    {
+        if(outNic == null || frame == null || outNic.getHostNode() == null)
+        {
+            return;
+        }
+        NetworkNode sender = outNic.getHostNode();
+        if(!network.containsVertex(sender))
+        {
+            return;
+        }
+
+        Set<Link> connectedLinks = network.edgesOf(sender);
+        for(Link link : connectedLinks)
+        {
+            if(!link.hasPort(outNic) || !link.isAvailable())
+            {
+                continue;
+            }
+            NIC remoteNic = link.getOtherPort(outNic);
+            if(remoteNic != null)
+            {
+                remoteNic.receiveFrame(frame);
+            }
+        }
+    }
+
+    public void transmitCircuitFrame(NIC outNic, EthernetFrame frame, UUID circuitToken)
+    {
+        if(outNic == null || frame == null || circuitToken == null || outNic.getHostNode() == null)
+        {
+            return;
+        }
+        NetworkNode sender = outNic.getHostNode();
+        if(!network.containsVertex(sender))
+        {
+            return;
+        }
+
+        Set<Link> connectedLinks = network.edgesOf(sender);
+        for(Link link : connectedLinks)
+        {
+            if(!link.hasPort(outNic) || !link.isReservedFor(circuitToken))
+            {
+                continue;
+            }
+            NIC remoteNic = link.getOtherPort(outNic);
+            if(remoteNic != null)
+            {
+                remoteNic.receiveFrame(frame);
+            }
+        }
+    }
+
+    public Link getLinkOnPort(NIC port)
+    {
+        if(port == null || port.getHostNode() == null)
+        {
+            return null;
+        }
+        NetworkNode node = port.getHostNode();
+        if(!network.containsVertex(node))
+        {
+            return null;
+        }
+        for(Link link : network.edgesOf(node))
+        {
+            if(link.hasPort(port))
+            {
+                return link;
+            }
+        }
+        return null;
+    }
+
+    public SimpleWeightedGraph<NetworkNode, Link> getGraph()
+    {
+        return network;
+    }
+
+    @Override
     public String toString()
     {
         return network.toString();
     }
-       
 }
