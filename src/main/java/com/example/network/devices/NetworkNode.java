@@ -7,9 +7,12 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.LinkedBlockingQueue;
 import com.example.interfaces.Event;
+import com.example.interfaces.FrameHandler;
+import com.example.interfaces.IpProtocolHandler;
 import com.example.network.JGraphTNetwork;
 import com.example.network.packets.EthernetFrame;
-import com.example.network.packets.IpPacket;
+import com.example.network.packets.FramePayload.EtherType;
+import com.example.network.packets.IpPacket.Protocol;
 
 public abstract class NetworkNode implements Runnable
 {
@@ -18,7 +21,9 @@ public abstract class NetworkNode implements Runnable
     protected final List<NIC> interfaces;
     protected final Map<String, String> arpTable;
     protected final Map<String, RouteEntry> routingTable;
-    protected final Map<UUID, NIC> circuitTable;
+    protected final Map<UUID, CircuitEntry> circuitTable;
+    protected final Map<EtherType, FrameHandler> frameHandlers;
+    protected final Map<Protocol, IpProtocolHandler> ipHandlers;
     protected final LinkedBlockingQueue<Event> listener;
     protected volatile boolean active;
     protected JGraphTNetwork network;
@@ -31,8 +36,30 @@ public abstract class NetworkNode implements Runnable
         this.arpTable = new HashMap<>();
         this.routingTable = new HashMap<>();
         this.circuitTable = new HashMap<>();
+        this.frameHandlers = new HashMap<>();
+        this.ipHandlers = new HashMap<>();
         this.listener = new LinkedBlockingQueue<>();
         this.active = true;
+    }
+
+    public void registerFrameHandler(EtherType etherType, FrameHandler handler)
+    {
+        frameHandlers.put(etherType, handler);
+    }
+
+    public FrameHandler getFrameHandler(EtherType etherType)
+    {
+        return frameHandlers.get(etherType);
+    }
+
+    public void registerIpHandler(Protocol protocol, IpProtocolHandler handler)
+    {
+        ipHandlers.put(protocol, handler);
+    }
+
+    public IpProtocolHandler getIpHandler(Protocol protocol)
+    {
+        return ipHandlers.get(protocol);
     }
 
     public void addInterface(NIC nic)
@@ -75,6 +102,16 @@ public abstract class NetworkNode implements Runnable
         routingTable.put(entry.getDestinationIp(), entry);
     }
 
+    public RouteEntry resolveRoute(String destinationIp)
+    {
+        RouteEntry route = routingTable.get(destinationIp);
+        if(route == null)
+        {
+            route = routingTable.get("0.0.0.0");
+        }
+        return route;
+    }
+
     public void onFrameReceived(NIC incomingNic)
     {
         queueInstruction(context -> processIncomingNicBuffer(incomingNic));
@@ -85,7 +122,11 @@ public abstract class NetworkNode implements Runnable
         EthernetFrame frame = incomingNic.pollFrame();
         if(frame != null)
         {
-            handleIncomingFrame(incomingNic, frame);
+            FrameHandler handler = frameHandlers.get(frame.getEtherType());
+            if(handler != null)
+            {
+                handler.handleFrame(this, incomingNic, frame);
+            }
         }
     }
 
@@ -137,11 +178,7 @@ public abstract class NetworkNode implements Runnable
         }
     }
 
-    protected abstract boolean isIpForwardingEnabled();
-
-    protected abstract void handleIncomingFrame(NIC incomingNic, EthernetFrame frame);
-
-    protected abstract void onLocalIpPacket(IpPacket packet);
+    public abstract boolean isIpForwardingEnabled();
 
     public UUID getNodeId()
     {
@@ -173,9 +210,19 @@ public abstract class NetworkNode implements Runnable
         return routingTable;
     }
 
-    public Map<UUID, NIC> getCircuitTable()
+    public Map<UUID, CircuitEntry> getCircuitTable()
     {
         return circuitTable;
+    }
+
+    public void setNetwork(JGraphTNetwork network)
+    {
+        this.network = network;
+    }
+
+    public JGraphTNetwork getNetwork()
+    {
+        return network;
     }
 
     @Override
@@ -215,15 +262,5 @@ public abstract class NetworkNode implements Runnable
             return false;
         }
         return true;
-    }
-
-    public void setNetwork(JGraphTNetwork network)
-    {
-        this.network = network;
-    }
-
-    public JGraphTNetwork getNetwork()
-    {
-        return network;
     }
 }

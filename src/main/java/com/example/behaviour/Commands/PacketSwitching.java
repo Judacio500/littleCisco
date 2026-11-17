@@ -1,46 +1,98 @@
 package com.example.behaviour.Commands;
 
-import java.util.List;
+import java.util.Arrays;
 import java.util.UUID;
+import com.example.interfaces.FrameHandler;
+import com.example.interfaces.SwitchingStrategy;
+import com.example.network.devices.NetworkNode;
+import com.example.network.devices.RouteEntry;
+import com.example.network.packets.FramePayload.EtherType;
+import com.example.network.packets.IpPacket;
+import com.example.network.packets.IpPacket.Protocol;
+import com.example.network.packets.Payload;
+import com.example.network.processes.Ipv4Process;
 
-import com.example.behaviour.Events.NetworkEvent;
-import com.example.interfaces.ManagerCommand;
-import com.example.network.Link;
-import com.example.network.NetworkManager;
-import com.example.network.Packt;
-import com.example.network.Pc;
-
-public class PacketSwitching implements ManagerCommand
+public class PacketSwitching implements SwitchingStrategy
 {
-    Pc origin, destination;
-    String message;
+    private final int mtuBytes;
 
-    public PacketSwitching(Pc origin, Pc destination, String message) 
+    public PacketSwitching(int mtuBytes)
     {
-        this.origin = origin;
-        this.destination = destination;
-        this.message = message;
+        this.mtuBytes = mtuBytes > 0 ? mtuBytes : 5;
     }
 
-    public void execute(NetworkManager context)
+    public PacketSwitching()
     {
-        List<Link> connection = context.network.getRouting(origin, destination);
+        this(5);
+    }
 
-        int packtSize = 5;
-
-        String[] messageParts = message.split("(?<=\\G.{" + packtSize + "})");
-   
-        UUID id = UUID.randomUUID();
-
-        for(int i=0; i<messageParts.length; i++)
+    @Override
+    public void send(NetworkNode origin, String destinationIp, Payload payload)
+    {
+        if(origin == null || destinationIp == null || payload == null)
         {
-            String m = messageParts[i];
-            Packt packt = new Packt(m, id, messageParts.length, i+1, connection); 
-        
-            NetworkEvent event = new NetworkEvent(packt);
-
-            origin.queueInstruction(event);
+            return;
         }
+
+        origin.queueInstruction(context -> {
+            FrameHandler handler = context.getFrameHandler(EtherType.IPV4);
+            if(!(handler instanceof Ipv4Process))
+            {
+                System.out.println("[" + context.getDisplayName() + "] Proceso IPv4 no disponible.");
+                return;
+            }
+
+            String sourceIp = resolveSourceIp(context, destinationIp);
+            if(sourceIp == null)
+            {
+                System.out.println("[" + context.getDisplayName() + "] Sin ruta hacia " + destinationIp + ".");
+                return;
+            }
+
+            Ipv4Process ipv4 = (Ipv4Process) handler;
+            byte[] rawData = payload.getRawData();
+            UUID packetId = UUID.randomUUID();
+
+            if(rawData.length == 0)
+            {
+                IpPacket emptyPacket = new IpPacket(packetId, sourceIp, destinationIp, 64, Protocol.DATA, 1, 1, new Payload(new byte[0]));
+                ipv4.sendIpPacket(context, emptyPacket);
+                return;
+            }
+
+            int totalFragments = (int) Math.ceil((double) rawData.length / mtuBytes);
+            for(int i = 0; i < totalFragments; i++)
+            {
+                int start = i * mtuBytes;
+                int end = Math.min(start + mtuBytes, rawData.length);
+                byte[] chunk = Arrays.copyOfRange(rawData, start, end);
+
+                IpPacket fragment = new IpPacket(
+                    packetId,
+                    sourceIp,
+                    destinationIp,
+                    64,
+                    Protocol.DATA,
+                    i + 1,
+                    totalFragments,
+                    new Payload(chunk)
+                );
+                ipv4.sendIpPacket(context, fragment);
+            }
+        });
     }
 
+    private String resolveSourceIp(NetworkNode context, String destinationIp)
+    {
+        if(context.ownsIp(destinationIp))
+        {
+            return destinationIp;
+        }
+        RouteEntry route = context.resolveRoute(destinationIp);
+        if(route == null || route.getOutInterface() == null)
+        {
+            return null;
+        }
+        return route.getOutInterface().getIpAddress();
+    }
 }
