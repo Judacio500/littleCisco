@@ -1,7 +1,5 @@
 package com.example.network.devices;
 
-public package com.example.network;
-
 import com.example.network.packets.EthernetFrame;
 import com.example.network.packets.IpPacket;
 import com.example.network.packets.IpPacket.Protocol;
@@ -36,6 +34,4 @@ public class Router extends NetworkNode
             System.out.println("[" + displayName + "] Mensaje de diagnostico recibido de " + packet.getSourceIp() + ": " + packet.getPayload().asString());
         }
     }
-} {
-    
 }

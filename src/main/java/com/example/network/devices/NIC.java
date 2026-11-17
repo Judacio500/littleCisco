@@ -1,4 +1,4 @@
-package com.example.network;
+package com.example.network.devices;
 
 import java.util.HashSet;
 import java.util.Set;

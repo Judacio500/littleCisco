@@ -1,4 +1,4 @@
-package com.example.network;
+package com.example.network.devices;
 
 import java.util.UUID;
 import com.example.behaviour.BasicConsole;

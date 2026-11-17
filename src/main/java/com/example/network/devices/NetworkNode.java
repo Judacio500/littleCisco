@@ -1,4 +1,4 @@
-package com.example.network;
+package com.example.network.devices;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.LinkedBlockingQueue;
 import com.example.interfaces.Event;
+import com.example.network.JGraphTNetwork;
 import com.example.network.packets.EthernetFrame;
 import com.example.network.packets.IpPacket;
 
@@ -20,6 +21,7 @@ public abstract class NetworkNode implements Runnable
     protected final Map<UUID, NIC> circuitTable;
     protected final LinkedBlockingQueue<Event> listener;
     protected volatile boolean active;
+    protected JGraphTNetwork network;
 
     public NetworkNode(String displayName)
     {
@@ -213,5 +215,15 @@ public abstract class NetworkNode implements Runnable
             return false;
         }
         return true;
+    }
+
+    public void setNetwork(JGraphTNetwork network)
+    {
+        this.network = network;
+    }
+
+    public JGraphTNetwork getNetwork()
+    {
+        return network;
     }
 }
