@@ -1,7 +1,9 @@
 package com.example.interfaces;
-import com.example.network.Pc;
 
-public interface Event 
+import com.example.network.devices.NetworkNode;
+
+@FunctionalInterface
+public interface Event
 {
-    public void execute(Pc context);
+    void execute(NetworkNode context);
 }

@@ -1,36 +1,105 @@
 package com.example.behaviour.Commands;
 
-import com.example.interfaces.ManagerCommand;
-import com.example.network.NetworkManager;
-import com.example.network.Pc;
-import com.example.network.Link;
-import com.example.behaviour.Events.ConnectionEvent;
-import java.util.List;
 import java.util.UUID;
+import com.example.interfaces.FrameHandler;
+import com.example.interfaces.SwitchingStrategy;
+import com.example.network.devices.NetworkNode;
+import com.example.network.devices.Pc;
+import com.example.network.packets.FramePayload.EtherType;
+import com.example.network.packets.Payload;
+import com.example.network.processes.CircuitProcess;
 
-
-public class CircuitSwitching implements ManagerCommand
+public class CircuitSwitching implements SwitchingStrategy
 {
-    Pc origin, destination;
-    UUID token;
-
-    public CircuitSwitching(Pc origin, Pc destination)
+    public void connect(NetworkNode origin, String destinationIp)
     {
-        this.origin = origin;
-        this.destination = destination;
+        if(origin == null || destinationIp == null)
+        {
+            return;
+        }
+
+        origin.queueInstruction(context -> {
+            FrameHandler handler = context.getFrameHandler(EtherType.CIRCUIT);
+            if(!(handler instanceof CircuitProcess))
+            {
+                System.out.println("[" + context.getDisplayName() + "] Proceso de circuitos no disponible.");
+                return;
+            }
+
+            if(context instanceof Pc && ((Pc) context).getConnToken() != null)
+            {
+                ((Pc) context).console.log("Red", "Ya existe un circuito activo. Cierra la conexion antes de abrir otra.");
+                return;
+            }
+
+            UUID circuitId = UUID.randomUUID();
+            ((CircuitProcess) handler).initiateSetup(context, circuitId, destinationIp);
+        });
     }
 
-    public void execute(NetworkManager context)
+    @Override
+    public void send(NetworkNode origin, String destinationIp, Payload payload)
     {
-        List<Link> connection = context.network.getRouting(origin, destination);
-
-        for(Link l : connection)
+        if(origin == null || payload == null)
         {
-            l.setBusy();
+            return;
         }
-        token = context.addConnection(connection);
 
-        ConnectionEvent event = new ConnectionEvent(token);
-        origin.queueInstruction(event);
+        origin.queueInstruction(context -> {
+            FrameHandler handler = context.getFrameHandler(EtherType.CIRCUIT);
+            if(!(handler instanceof CircuitProcess))
+            {
+                return;
+            }
+
+            UUID circuitId = resolveActiveCircuit(context);
+            if(circuitId == null)
+            {
+                if(context instanceof Pc)
+                {
+                    ((Pc) context).console.log("Red", "No hay ningun circuito establecido.");
+                }
+                return;
+            }
+
+            ((CircuitProcess) handler).sendData(context, circuitId, destinationIp, payload);
+        });
+    }
+
+    public void disconnect(NetworkNode origin)
+    {
+        if(origin == null)
+        {
+            return;
+        }
+
+        origin.queueInstruction(context -> {
+            FrameHandler handler = context.getFrameHandler(EtherType.CIRCUIT);
+            if(!(handler instanceof CircuitProcess))
+            {
+                return;
+            }
+
+            UUID circuitId = resolveActiveCircuit(context);
+            if(circuitId == null)
+            {
+                return;
+            }
+
+            ((CircuitProcess) handler).initiateTeardown(context, circuitId);
+        });
+    }
+
+    private UUID resolveActiveCircuit(NetworkNode context)
+    {
+        if(context instanceof Pc)
+        {
+            return ((Pc) context).getConnToken();
+        }
+        if(!context.getCircuitTable().isEmpty())
+        {
+            return context.getCircuitTable().keySet().iterator().next();
+        }
+        return null;
     }
 }
