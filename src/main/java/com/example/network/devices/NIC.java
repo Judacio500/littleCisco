@@ -3,7 +3,7 @@ package com.example.network.devices;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import com.example.network.packets.EthernetFrame;
 
 public class NIC
@@ -11,46 +11,82 @@ public class NIC
     private final String name;
     private final String macAddress;
     private String ipAddress;
+    private String subnetMask;
     private NetworkNode hostNode;
-    private final LinkedBlockingQueue<EthernetFrame> rxBuffer;
+    private final ConcurrentLinkedQueue<EthernetFrame> rxBuffer;
     private final Set<String> subscribedMulticastMacs;
 
-    public NIC(String name, String ipAddress)
+    public NIC(String name, String ipAddress, String subnetMask)
     {
         this.name = name;
+        this.macAddress = generateRandomMac();
         this.ipAddress = ipAddress;
-        this.macAddress = UUID.randomUUID().toString().replace("-", "").substring(0, 12).toUpperCase();
-        this.rxBuffer = new LinkedBlockingQueue<>();
+        this.subnetMask = (ipAddress != null && subnetMask == null) ? "255.255.255.0" : subnetMask;
+        this.rxBuffer = new ConcurrentLinkedQueue<>();
         this.subscribedMulticastMacs = new HashSet<>();
     }
 
-    public void attachToNode(NetworkNode hostNode)
+    public NIC(String name, String ipAddress)
     {
-        this.hostNode = hostNode;
+        this(name, ipAddress, ipAddress != null ? "255.255.255.0" : null);
+    }
+
+    private String generateRandomMac()
+    {
+        String hex = UUID.randomUUID().toString().replace("-", "").substring(0, 12).toUpperCase();
+        StringBuilder mac = new StringBuilder();
+        for(int i = 0; i < 12; i += 2)
+        {
+            if(i > 0)
+            {
+                mac.append(":");
+            }
+            mac.append(hex.substring(i, i + 2));
+        }
+        return mac.toString();
+    }
+
+    public void attachToNode(NetworkNode node)
+    {
+        this.hostNode = node;
+    }
+
+    public void setIpConfiguration(String ipAddress, String subnetMask)
+    {
+        this.ipAddress = ipAddress;
+        this.subnetMask = subnetMask;
+        if(hostNode != null)
+        {
+            hostNode.onInterfaceIpConfigured(this);
+        }
     }
 
     public void joinMulticastGroup(String multicastMac)
     {
-        subscribedMulticastMacs.add(multicastMac.toUpperCase());
+        if(multicastMac != null)
+        {
+            subscribedMulticastMacs.add(multicastMac.toUpperCase());
+        }
     }
 
     public void leaveMulticastGroup(String multicastMac)
     {
-        subscribedMulticastMacs.remove(multicastMac.toUpperCase());
+        if(multicastMac != null)
+        {
+            subscribedMulticastMacs.remove(multicastMac.toUpperCase());
+        }
     }
 
     public boolean acceptsFrame(EthernetFrame frame)
     {
-        if(frame == null || frame.getDestMac() == null)
+        if(frame == null || frame.getDestinationMac() == null)
         {
             return false;
         }
-        if(frame.isBroadcast())
-        {
-            return true;
-        }
-        String destMac = frame.getDestMac().toUpperCase();
-        return macAddress.equals(destMac) || subscribedMulticastMacs.contains(destMac);
+        String destMac = frame.getDestinationMac().toUpperCase();
+        return destMac.equals(this.macAddress)
+            || destMac.equals(EthernetFrame.BROADCAST_MAC)
+            || subscribedMulticastMacs.contains(destMac);
     }
 
     public void receiveFrame(EthernetFrame frame)
@@ -86,9 +122,9 @@ public class NIC
         return ipAddress;
     }
 
-    public void setIpAddress(String ipAddress)
+    public String getSubnetMask()
     {
-        this.ipAddress = ipAddress;
+        return subnetMask;
     }
 
     public NetworkNode getHostNode()
