@@ -6,6 +6,7 @@ import com.example.network.processes.ArpProcess;
 import com.example.network.processes.CircuitProcess;
 import com.example.network.processes.DataProcess;
 import com.example.network.processes.Ipv4Process;
+import com.example.network.processes.PingProcess;
 
 public final class NodeFactory
 {
@@ -33,5 +34,6 @@ public final class NodeFactory
         node.registerFrameHandler(EtherType.ARP, new ArpProcess());
         node.registerFrameHandler(EtherType.IPV4, new Ipv4Process());
         node.registerFrameHandler(EtherType.CIRCUIT, new CircuitProcess());
+        node.registerIpHandler(Protocol.PING, new PingProcess());
     }
 }
