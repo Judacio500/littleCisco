@@ -6,13 +6,12 @@ import com.example.network.processes.ArpProcess;
 import com.example.network.processes.CircuitProcess;
 import com.example.network.processes.DataProcess;
 import com.example.network.processes.Ipv4Process;
+import com.example.network.processes.OspfProcess;
 import com.example.network.processes.PingProcess;
 
 public final class NodeFactory
 {
-    private NodeFactory()
-    {
-    }
+    private NodeFactory() {}
 
     public static Pc createPc(String displayName)
     {
@@ -26,6 +25,7 @@ public final class NodeFactory
     {
         Router router = new Router(displayName);
         installBaseProcesses(router);
+        router.registerIpHandler(Protocol.OSPF, new OspfProcess());
         return router;
     }
 

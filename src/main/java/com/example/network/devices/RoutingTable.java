@@ -30,24 +30,14 @@ public class RoutingTable
             return;
         }
 
-        if(existing.getType() == RouteType.CONNECTED && candidate.getType() != RouteType.CONNECTED)
-        {
-            return;
-        }
+        int existingPref = existing.getType().getPreference();
+        int candidatePref = candidate.getType().getPreference();
 
-        if(candidate.getType() == RouteType.CONNECTED)
+        if(candidatePref < existingPref)
         {
             routes.put(key, candidate);
-            return;
         }
-
-        if(candidate.getType() == RouteType.OSPF)
-        {
-            routes.put(key, candidate);
-            return;
-        }
-
-        if(candidate.getType() == RouteType.STATIC && existing.getType() != RouteType.OSPF)
+        else if(candidatePref == existingPref && candidate.getMetric() <= existing.getMetric())
         {
             routes.put(key, candidate);
         }
@@ -55,7 +45,7 @@ public class RoutingTable
 
     public void flushOspfRoutes()
     {
-        routes.entrySet().removeIf(entry -> entry.getValue().getType() == RouteType.OSPF);
+        routes.entrySet().removeIf(entry -> entry.getValue().getType().isOspfDerived());
     }
 
     public void removeConnectedRoutesForInterface(NIC nic)

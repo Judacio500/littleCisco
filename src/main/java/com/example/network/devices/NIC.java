@@ -33,17 +33,7 @@ public class NIC
 
     private String generateRandomMac()
     {
-        String hex = UUID.randomUUID().toString().replace("-", "").substring(0, 12).toUpperCase();
-        StringBuilder mac = new StringBuilder();
-        for(int i = 0; i < 12; i += 2)
-        {
-            if(i > 0)
-            {
-                mac.append(":");
-            }
-            mac.append(hex.substring(i, i + 2));
-        }
-        return mac.toString();
+        return UUID.randomUUID().toString().replace("-", "").substring(0, 12).toUpperCase();
     }
 
     public void attachToNode(NetworkNode node)
@@ -79,11 +69,11 @@ public class NIC
 
     public boolean acceptsFrame(EthernetFrame frame)
     {
-        if(frame == null || frame.getDestinationMac() == null)
+        if(frame == null || frame.getDestMac() == null)
         {
             return false;
         }
-        String destMac = frame.getDestinationMac().toUpperCase();
+        String destMac = frame.getDestMac().toUpperCase();
         return destMac.equals(this.macAddress)
             || destMac.equals(EthernetFrame.BROADCAST_MAC)
             || subscribedMulticastMacs.contains(destMac);

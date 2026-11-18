@@ -4,20 +4,34 @@ public class RouteEntry
 {
     public enum RouteType
     {
-        CONNECTED("C"),
-        STATIC("S"),
-        OSPF("O");
+        CONNECTED("C", 0),
+        OSPF("O", 1),
+        OSPF_IA("O IA", 2),
+        OSPF_E2("O E2", 3),
+        STATIC("S", 4);
 
         private final String code;
+        private final int preference;
 
-        RouteType(String code)
+        RouteType(String code, int preference)
         {
             this.code = code;
+            this.preference = preference;
         }
 
         public String getCode()
         {
             return code;
+        }
+
+        public int getPreference()
+        {
+            return preference;
+        }
+
+        public boolean isOspfDerived()
+        {
+            return this == OSPF || this == OSPF_IA || this == OSPF_E2;
         }
     }
 
@@ -63,6 +77,16 @@ public class RouteEntry
     public static RouteEntry createOspfRoute(String networkAddress, String subnetMask, String nextHopIp, NIC outInterface, int cost)
     {
         return new RouteEntry(RouteType.OSPF, networkAddress, subnetMask, nextHopIp, outInterface, cost);
+    }
+
+    public static RouteEntry createOspfInterAreaRoute(String networkAddress, String subnetMask, String nextHopIp, NIC outInterface, int cost)
+    {
+        return new RouteEntry(RouteType.OSPF_IA, networkAddress, subnetMask, nextHopIp, outInterface, cost);
+    }
+
+    public static RouteEntry createOspfExternalRoute(String networkAddress, String subnetMask, String nextHopIp, NIC outInterface, int cost)
+    {
+        return new RouteEntry(RouteType.OSPF_E2, networkAddress, subnetMask, nextHopIp, outInterface, cost);
     }
 
     public boolean isDirectRoute()

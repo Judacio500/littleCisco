@@ -35,6 +35,24 @@ public final class SubnetUtils
                (ip & 0xFF);
     }
 
+    public static String normalizeMask(String ipOrNetwork, String maskOrWildcard)
+    {
+        if("0.0.0.0".equals(ipOrNetwork) && "255.255.255.255".equals(maskOrWildcard))
+        {
+            return "0.0.0.0";
+        }
+
+        int raw = ipToInt(maskOrWildcard);
+        int inverted = ~raw;
+        boolean isContiguousSubnetMask = (raw != 0) && ((inverted == 0) || (((inverted + 1) & inverted) == 0));
+
+        if(isContiguousSubnetMask)
+        {
+            return maskOrWildcard;
+        }
+        return intToIp(inverted);
+    }
+
     public static String getNetworkAddress(String ipAddress, String subnetMask)
     {
         int ip = ipToInt(ipAddress);
