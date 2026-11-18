@@ -7,7 +7,8 @@ public class IpPacket implements FramePayload
     public enum Protocol
     {
         DATA,
-        OSPF
+        OSPF,
+        PING
     }
 
     private final UUID packetId;

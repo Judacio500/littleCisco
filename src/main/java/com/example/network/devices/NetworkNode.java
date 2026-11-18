@@ -20,7 +20,7 @@ public abstract class NetworkNode implements Runnable
     protected String displayName;
     protected final List<NIC> interfaces;
     protected final Map<String, String> arpTable;
-    protected final Map<String, RouteEntry> routingTable;
+    protected final RoutingTable routingTable;
     protected final Map<UUID, CircuitEntry> circuitTable;
     protected final Map<EtherType, FrameHandler> frameHandlers;
     protected final Map<Protocol, IpProtocolHandler> ipHandlers;
@@ -34,7 +34,7 @@ public abstract class NetworkNode implements Runnable
         this.displayName = displayName;
         this.interfaces = new ArrayList<>();
         this.arpTable = new HashMap<>();
-        this.routingTable = new HashMap<>();
+        this.routingTable = new RoutingTable();
         this.circuitTable = new HashMap<>();
         this.frameHandlers = new HashMap<>();
         this.ipHandlers = new HashMap<>();
@@ -66,6 +66,18 @@ public abstract class NetworkNode implements Runnable
     {
         nic.attachToNode(this);
         interfaces.add(nic);
+        onInterfaceIpConfigured(nic);
+    }
+
+    public void onInterfaceIpConfigured(NIC nic)
+    {
+        routingTable.removeConnectedRoutesForInterface(nic);
+        if(nic.getIpAddress() != null && nic.getSubnetMask() != null)
+        {
+            routingTable.addOrUpdateRoute(
+                RouteEntry.createConnectedRoute(nic.getIpAddress(), nic.getSubnetMask(), nic)
+            );
+        }
     }
 
     public NIC getInterfaceByName(String name)
@@ -99,17 +111,12 @@ public abstract class NetworkNode implements Runnable
 
     public void addRoute(RouteEntry entry)
     {
-        routingTable.put(entry.getDestinationIp(), entry);
+        routingTable.addOrUpdateRoute(entry);
     }
 
     public RouteEntry resolveRoute(String destinationIp)
     {
-        RouteEntry route = routingTable.get(destinationIp);
-        if(route == null)
-        {
-            route = routingTable.get("0.0.0.0");
-        }
-        return route;
+        return routingTable.resolve(destinationIp);
     }
 
     public void onFrameReceived(NIC incomingNic)
@@ -205,7 +212,7 @@ public abstract class NetworkNode implements Runnable
         return arpTable;
     }
 
-    public Map<String, RouteEntry> getRoutingTable()
+    public RoutingTable getRoutingTable()
     {
         return routingTable;
     }
