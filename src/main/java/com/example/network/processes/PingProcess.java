@@ -6,6 +6,7 @@ import com.example.interfaces.IpProtocolHandler;
 import com.example.network.devices.NetworkNode;
 import com.example.network.devices.Pc;
 import com.example.network.devices.RouteEntry;
+import com.example.network.devices.Router;
 import com.example.network.packets.FramePayload.EtherType;
 import com.example.network.packets.IpPacket;
 import com.example.network.packets.IpPacket.Protocol;
@@ -94,6 +95,10 @@ public class PingProcess implements IpProtocolHandler
         if(context instanceof Pc)
         {
             ((Pc) context).console.log("Red", msg);
+        }
+        else if(context instanceof Router)
+        {
+            ((Router) context).console.log("Red", msg);
         }
         System.out.println("[" + context.getDisplayName() + "] " + msg);
     }

@@ -184,7 +184,6 @@ public class OspfProcess implements IpProtocolHandler
         boolean changed = false;
 
         Iterator<NeighborState> it = neighbors.values().iterator();
-
         while(it.hasNext())
         {
             NeighborState n = it.next();
@@ -433,34 +432,6 @@ public class OspfProcess implements IpProtocolHandler
         }
         for(RouteEntry r : intraRoutes.values()) router.addRoute(r);
 
-        // ABR: resumen entre Area 0 y areas regulares (O IA)
-        if(areas.contains(0) && areas.size() > 1)
-        {
-            for(Integer targetArea : areas)
-            {
-                List<LinkAdvertisement> summary = new ArrayList<>();
-                for(RouteEntry r : router.getRoutingTable().getAllRoutes())
-                {
-                    if(r.getType() != RouteType.CONNECTED && r.getType() != RouteType.OSPF) continue;
-                    InterfaceState outState = activeInterfaces.get(r.getOutInterface().getName().toLowerCase());
-                    if(outState == null || outState.areaId == targetArea) continue;
-                    if(targetArea != 0 && outState.areaId != 0) continue;
-                    summary.add(new LinkAdvertisement(r.getNetworkAddress(), r.getSubnetMask(), selfId, Math.max(1, r.getMetric())));
-                }
-                if(!summary.isEmpty())
-                {
-                    OspfPacket sumLsa = OspfPacket.createLsa(LsaType.SUMMARY, selfId, selfId, targetArea, ++sequenceNumber, summary);
-                    Map<String, OspfPacket> db = areaLsdb.computeIfAbsent(targetArea, k -> new LinkedHashMap<>());
-                    OspfPacket old = db.get(sumLsa.getLsdbKey());
-                    if(old == null || old.getLinks().size() != summary.size())
-                    {
-                        db.put(sumLsa.getLsdbKey(), sumLsa);
-                        floodArea(router, targetArea, sumLsa);
-                    }
-                }
-            }
-        }
-
         // Instalar rutas Inter-Area (O IA) y Externas (O E2) anunciadas por ABR/ASBR
         for(Integer areaId : areas)
         {
@@ -483,6 +454,34 @@ public class OspfProcess implements IpProtocolHandler
                     else if(lsa.getLsaType() == LsaType.EXTERNAL)
                     {
                         router.addRoute(RouteEntry.createOspfExternalRoute(ad.getNetworkAddress(), ad.getSubnetMask(), hop.getNextHopIp(), hop.getOutInterface(), ad.getCost()));
+                    }
+                }
+            }
+        }
+
+        // ABR: resumen entre Area 0 y areas regulares (O IA)
+        if(areas.contains(0) && areas.size() > 1)
+        {
+            for(Integer targetArea : areas)
+            {
+                List<LinkAdvertisement> summary = new ArrayList<>();
+                for(RouteEntry r : router.getRoutingTable().getAllRoutes())
+                {
+                    if(r.getType() != RouteType.CONNECTED && r.getType() != RouteType.OSPF && r.getType() != RouteType.OSPF_E2) continue;
+                    InterfaceState outState = activeInterfaces.get(r.getOutInterface().getName().toLowerCase());
+                    if(outState == null || outState.areaId == targetArea) continue;
+                    if(targetArea != 0 && outState.areaId != 0) continue;
+                    summary.add(new LinkAdvertisement(r.getNetworkAddress(), r.getSubnetMask(), selfId, Math.max(1, r.getMetric())));
+                }
+                if(!summary.isEmpty())
+                {
+                    OspfPacket sumLsa = OspfPacket.createLsa(LsaType.SUMMARY, selfId, selfId, targetArea, ++sequenceNumber, summary);
+                    Map<String, OspfPacket> db = areaLsdb.computeIfAbsent(targetArea, k -> new LinkedHashMap<>());
+                    OspfPacket old = db.get(sumLsa.getLsdbKey());
+                    if(old == null || old.getLinks().size() != summary.size())
+                    {
+                        db.put(sumLsa.getLsdbKey(), sumLsa);
+                        floodArea(router, targetArea, sumLsa);
                     }
                 }
             }
